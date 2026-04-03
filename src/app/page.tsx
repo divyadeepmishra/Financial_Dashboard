@@ -1,65 +1,89 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { PageWrapper } from '@/components/layout/PageWrapper';
+import { SummaryCard } from '@/components/dashboard/SummaryCard';
+import { BalanceTrendChart } from '@/components/dashboard/BalanceTrendChart';
+import { SpendingPieChart } from '@/components/dashboard/SpendingPieChart';
+import { QuickStats } from '@/components/dashboard/QuickStats';
+import { useTransactionStore } from '@/store/useTransactionStore';
+import { calculateSummary, formatCurrency } from '@/utils/formatters';
+import { Wallet, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react';
+
+export default function DashboardPage() {
+  const { transactions } = useTransactionStore();
+  const summary = calculateSummary(transactions);
+
+  const cards = [
+    {
+      title: 'Total Balance',
+      value: summary.totalBalance,
+      change: summary.incomeChange - summary.expenseChange,
+      icon: Wallet,
+      color: '#D4A853',
+    },
+    {
+      title: 'Monthly Income',
+      value: summary.monthlyIncome,
+      change: summary.incomeChange,
+      icon: TrendingUp,
+      color: '#2DD4A8',
+    },
+    {
+      title: 'Monthly Expenses',
+      value: summary.monthlyExpenses,
+      change: summary.expenseChange,
+      icon: TrendingDown,
+      color: '#F43F5E',
+    },
+    {
+      title: 'Savings Rate',
+      value: summary.savingsRate,
+      change: summary.savingsRate > 20 ? 5.2 : -3.1,
+      icon: PiggyBank,
+      color: '#6366F1',
+    },
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+    <PageWrapper>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {cards.map((card, i) => (
+            <SummaryCard
+              key={card.title}
+              title={card.title}
+              value={card.value}
+              format={(v) =>
+                card.title === 'Savings Rate'
+                  ? `${v.toFixed(1)}%`
+                  : formatCurrency(v)
+              }
+              change={card.change}
+              icon={card.icon}
+              index={i}
+              accentColor={card.color}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
-    </div>
+
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3">
+            <BalanceTrendChart data={summary.balanceTrend} />
+          </div>
+          <div className="lg:col-span-2">
+            <SpendingPieChart data={summary.categoryBreakdown} />
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <QuickStats
+          avgDailySpend={summary.avgDailySpend}
+          topMerchant={summary.topMerchant}
+          largestTransaction={summary.largestTransaction}
+        />
+      </div>
+    </PageWrapper>
   );
 }
